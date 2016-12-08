@@ -4,6 +4,16 @@
 
 #include <GLFW/glfw3.h>
 
+struct BitmapRGBA
+{
+    const static int BITS_PER_PIXEL = 4;
+    int width;
+    int height;
+    GLubyte* data;
+};
+static BitmapRGBA bitmap;
+static bool running;
+
 static void error_callback(int error, const char* description)
 {
     // fprintf(stderr, "Error: %s\n", description);
@@ -12,41 +22,56 @@ static void error_callback(int error, const char* description)
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        running = false;
     }
 }
 
-static void window_size_callback(GLFWwindow* window, int width, int height)
+// static void window_size_callback(GLFWwindow* window, int width, int height)
+// {
+//     // int left, top, right, bottom;
+//     // glfwGetWindowFrameSize(window, &left, &top, &right, &bottom);
+// }
+
+static void resize_bitmap(int width, int height)
 {
-    // int left, top, right, bottom;
-    // glfwGetWindowFrameSize(window, &left, &top, &right, &bottom);
+    // Only allocate new space if needed
+    int new_size = width * height * BitmapRGBA::BITS_PER_PIXEL;
+    if (bitmap.data) {
+        delete bitmap.data;
+    }
+    bitmap.data = new GLubyte[new_size];
+    bitmap.width = width;
+    bitmap.height = height;
+}
+
+static void update_window(GLFWwindow* window)
+{
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glRasterPos2f(-1,1);
+    glPixelZoom( 1, -1 );
+    glDrawPixels(bitmap.width, bitmap.height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.data);
+    glfwSwapBuffers(window);
+}
+
+static void render_gradient(int xoff, int yoff)
+{
+    GLuint *pixel = (GLuint *)bitmap.data;
+    for (int row = 0; row < bitmap.height; ++row) {
+        for (int col = 0; col < bitmap.width; ++col) {
+            *(pixel++) = (0xff << 24)
+                | (((GLuint)col + xoff) << 16)
+                | (((GLuint)row + yoff) << 8)
+                | (0x0 << 0);
+        }
+    }
 }
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // glViewport(0, 0, width, height);
-    // CreateDIBSecion (device independent bitmat)
+    resize_bitmap(width, height);
+    update_window(window);
 }
-
-static void resize_DIB_section(int width, int height)
-{
-    // Create fbo
-
-}
-
-// static void update_window(context, int x, int y, int width, int height)
-// {
-//     // TODO(ajc): use glCopyImageSubData in the future (in place of blit)
-
-//     // Note GL_FRAMEBUFFER binds to both READ/DRAW
-//     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-//     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-//     glBlitFramebuffer(
-//         0, 0, width, height,             // src rect
-//         0, 0, width, height,             // dst rect
-//         GL_COLOR_BUFFER_BIT,             // buffer mask
-//         GL_LINEAR);
-// }
 
 // TODO(ajc): error handling
 int main(int argc, char const *argv[])
@@ -75,28 +100,22 @@ int main(int argc, char const *argv[])
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, key_callback);
     // TODO(ajc): Do I need both of these? Probably just framebuffer.
-    glfwSetWindowSizeCallback(window, window_size_callback);
+    // glfwSetWindowSizeCallback(window, window_size_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    framebuffer_size_callback(window, width, height);
 
-
-const unsigned int w = 640;
-const unsigned int h = 480;
-GLubyte pixels[w * h * 3];
-for (unsigned int i = 0; i < w * h * 3; i+=3) {
-    pixels[i + 0] = 0xff; // Red
-    pixels[i + 1] = 0x0; // Green
-    pixels[i + 2] = 0x0; // Blue
-}
-while (!glfwWindowShouldClose(window))
-{
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDrawPixels(w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-}
-
+    running = true;
+    int xoff = 0;
+    int yoff = 0;
+    while (running)
+    {
+        render_gradient(xoff++, yoff);
+        update_window(window);
+        glfwPollEvents();
+    }
 
     // Cleanup
     glfwDestroyWindow(window);
