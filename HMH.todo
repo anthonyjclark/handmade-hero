@@ -1,0 +1,13 @@
+
+Day 001
+ ✔ Setting up the directory and environment @done (16-12-08 15:37)
+
+Day 002
+ ✔ Setting up windowing @done (16-12-08 15:37)
+ ✘ Draw white/black rectangles to the screen @cancelled (16-12-08 15:38)
+
+Day 003
+ ✔ Be able to close the window @done (16-12-08 16:26)
+ ☐ Global "running" variable
+ ☐ Handle window resizing (bitmap array and callback)
+ ☐ Using FBO instead of DIB
