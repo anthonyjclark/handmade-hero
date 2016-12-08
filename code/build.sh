@@ -4,5 +4,5 @@ CODE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 mkdir -p ${CODE_DIR}/../build
 pushd ${CODE_DIR}/../build > /dev/null
-g++ -ggdb -o handmade ${CODE_DIR}/handmade.cpp
+g++ `pkg-config --cflags glfw3` -ggdb -o handmade ${CODE_DIR}/handmade.cpp `pkg-config --static --libs glfw3`
 popd > /dev/null
