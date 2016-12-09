@@ -115,6 +115,7 @@ int main(int argc, char const *argv[])
     glfwGetFramebufferSize(window, &width, &height);
     back_buffer.width = width;
     back_buffer.height = height;
+    back_buffer.pitch = width * back_buffer.BITS_PER_PIXEL;
     back_buffer.data = new GLubyte[width * height * back_buffer.BITS_PER_PIXEL];
 
     running = true;
