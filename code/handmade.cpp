@@ -6,12 +6,13 @@
 
 struct BitmapRGBA
 {
-    const static int BITS_PER_PIXEL = 4;
+    const int BITS_PER_PIXEL = 4;
     int width;
     int height;
+    int pitch;
     GLubyte* data;
 };
-static BitmapRGBA bitmap;
+static BitmapRGBA back_buffer;
 static bool running;
 
 static void error_callback(int error, const char* description)
@@ -21,7 +22,7 @@ static void error_callback(int error, const char* description)
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
         running = false;
     }
 }
@@ -32,29 +33,36 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 //     // glfwGetWindowFrameSize(window, &left, &top, &right, &bottom);
 // }
 
-static void resize_bitmap(int width, int height)
+static void resize_bitmap(BitmapRGBA &bitmap, int width, int height)
 {
-    // Only allocate new space if needed
-    int new_size = width * height * BitmapRGBA::BITS_PER_PIXEL;
-    if (bitmap.data) {
-        delete bitmap.data;
-    }
-    bitmap.data = new GLubyte[new_size];
-    bitmap.width = width;
-    bitmap.height = height;
+    // int new_size = width * height * BitmapRGBA::BITS_PER_PIXEL;
+    // if (bitmap.data) {
+    //     delete bitmap.data;
+    // }
+    // bitmap.data = new GLubyte[new_size];
+    // bitmap.width = width;
+    // bitmap.height = height;
 }
 
-static void update_window(GLFWwindow* window)
+static void update_window(GLFWwindow* window, BitmapRGBA bitmap)
 {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     glRasterPos2f(-1,1);
-    glPixelZoom( 1, -1 );
+
+    // For stretching
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    GLfloat xstretch = width / (GLfloat)bitmap.width;
+    GLfloat ystretch = height / (GLfloat)bitmap.height;
+
+    glPixelZoom(xstretch, -ystretch);
+
     glDrawPixels(bitmap.width, bitmap.height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.data);
     glfwSwapBuffers(window);
 }
 
-static void render_gradient(int xoff, int yoff)
+static void render_gradient(BitmapRGBA bitmap, int xoff, int yoff)
 {
     GLuint *pixel = (GLuint *)bitmap.data;
     for (int row = 0; row < bitmap.height; ++row) {
@@ -69,8 +77,8 @@ static void render_gradient(int xoff, int yoff)
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    resize_bitmap(width, height);
-    update_window(window);
+    resize_bitmap(back_buffer, width, height);
+    update_window(window, back_buffer);
 }
 
 // TODO(ajc): error handling
@@ -105,15 +113,17 @@ int main(int argc, char const *argv[])
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    framebuffer_size_callback(window, width, height);
+    back_buffer.width = width;
+    back_buffer.height = height;
+    back_buffer.data = new GLubyte[width * height * back_buffer.BITS_PER_PIXEL];
 
     running = true;
     int xoff = 0;
     int yoff = 0;
     while (running)
     {
-        render_gradient(xoff++, yoff);
-        update_window(window);
+        render_gradient(back_buffer, ++xoff, ++(++yoff));
+        update_window(window, back_buffer);
         glfwPollEvents();
     }
 
