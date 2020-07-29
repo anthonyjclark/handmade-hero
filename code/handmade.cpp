@@ -123,9 +123,15 @@ int main(int argc, char const *argv[])
     int yoff = 0;
     while (running)
     {
+        // Process events (messages)
+        // TODO(ajc): at what frequency should we poll?
+        glfwPollEvents();
+
+        poll_joystick();
+
+        // Render and update the screen
         render_gradient(back_buffer, ++xoff, ++(++yoff));
         update_window(window, back_buffer);
-        glfwPollEvents();
     }
 
     // Cleanup
